@@ -90,6 +90,8 @@ extension CodeSign {
         guard !Self.isExecutableSigned else {
             return
         }
+
+        Logger.log(info: "isExecutableSigned true")
         
         try Self.signMainExecutableAndRun(file: file, entitlementsURL: entitlementsURL)
     }
