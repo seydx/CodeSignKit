@@ -88,6 +88,7 @@ extension CodeSign {
     public static func signMainExecutableOnceAndRun(
         file: String = #file, entitlementsURL: URL? = nil) throws {
         guard !Self.isExecutableSigned else {
+            Logger.log(info: "isExecutableSigned false")
             return
         }
 
