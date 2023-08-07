@@ -71,8 +71,8 @@ extension CodeSign {
         let defaultEntitlementsURL = FileManager.default.fileExists(at: targetEntitlementsURL) ? targetEntitlementsURL: nil
         let entitlementsURL = entitlementsURL ?? defaultEntitlementsURL
 
-        Logger.info(info: "at: \(Bundle.main.executableURL)")
-        Logger.info(info: "entitlementsURL: \(entitlementsURL)")
+        Logger.log(info: "at: \(Bundle.main.executableURL)")
+        Logger.log(info: "entitlementsURL: \(entitlementsURL)")
 
         try Self.sign(
             at: Bundle.main.executableURL!,
