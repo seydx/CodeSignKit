@@ -78,6 +78,8 @@ extension CodeSign {
             at: Bundle.main.executableURL!,
             entitlementsURL: entitlementsURL,
             force: true)
+
+        Logger.log(info: "signed")
         
         var environment = ProcessInfo.processInfo.environment
         environment[executableSignedEnvironmentKey] = "TRUE"
