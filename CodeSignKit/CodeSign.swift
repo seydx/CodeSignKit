@@ -16,8 +16,7 @@ public enum CodeSign {
         return ProcessInfo.processInfo.environment["CODESIGNKIT_DEFAULT_IDENTITY"]
     }
     
-    public static func sign(
-        at url: URL, identity: String? = nil, entitlementsURL: URL? = nil, force: Bool = false) throws {
+    public static func sign(at url: URL, identity: String? = nil, entitlementsURL: URL? = nil, force: Bool = false) throws {
         Logger.log(debug: "Signing executable at “\(url.path)” with entitlements “\(entitlementsURL?.path ?? "default")” (force: \(force))…")
         
         var arguments: [String] = []
@@ -54,6 +53,9 @@ public enum CodeSign {
 }
 
 extension CodeSign {
+    private static let entitlementsDefaultFileName = "Entitlements"
+    private static let entitlementsExtension = "entitlements"
+
     private static var executableSignedEnvironmentKey: String {
         return "CODESIGNKIT_EXECUTABLE_SIGNED__" + ProcessInfo.processInfo.processName.uppercased()
     }
@@ -62,14 +64,31 @@ extension CodeSign {
         return ProcessInfo.processInfo.environment[Self.executableSignedEnvironmentKey] != nil
     }
     
-    private static func signMainExecutableAndRun(
-        file: String = #file, entitlementsURL: URL? = nil) throws {
-        let targetDirectory = file.pathURL.deletingLastPathComponent()
-        let targetEntitlementsURL = targetDirectory
-            .appendingPathComponent(targetDirectory.lastPathComponent)
-            .appendingPathExtension("entitlements")
-        let defaultEntitlementsURL = FileManager.default.fileExists(at: targetEntitlementsURL) ? targetEntitlementsURL: nil
-        let entitlementsURL = entitlementsURL ?? defaultEntitlementsURL
+    private static func findPairedEntitlementsFile(to file: URL) -> URL? {
+        var entitlementsFileNames = [self.entitlementsDefaultFileName]
+        entitlementsFileNames += [file.deletingPathExtension().lastPathComponent]
+        let targetDirectory: URL
+        if FileManager.default.directoryExists(at: file) {
+            targetDirectory = file
+        }
+        else if FileManager.default.nonDirectoryFileExists(at: file) {
+            targetDirectory = file.deletingLastPathComponent()
+            entitlementsFileNames += [targetDirectory.lastPathComponent]
+        }
+        else {
+            return nil
+        }
+        for entitlementsFileName in entitlementsFileNames {
+            let pairedEntitlementsFile = targetDirectory.appendingPathComponents(entitlementsFileName).appendingPathExtension(self.entitlementsExtension)
+            if FileManager.default.fileExists(at: pairedEntitlementsFile) {
+                return pairedEntitlementsFile
+            }
+        }
+        return nil
+    }
+    
+    private static func signMainExecutableAndRun(entitlementsURL: URL? = nil, _filePath: String = #filePath) throws {
+        let entitlementsURL = entitlementsURL ?? findPairedEntitlementsFile(to: _filePath.pathURL)
 
         try Self.sign(
             at: Bundle.main.executableURL!,
@@ -85,12 +104,11 @@ extension CodeSign {
         try process.runReplacingCurrentProcess()
     }
     
-    public static func signMainExecutableOnceAndRun(
-        file: String = #file, entitlementsURL: URL? = nil) throws {
+    public static func signMainExecutableOnceAndRun(entitlementsURL: URL? = nil, _filePath: String = #filePath) throws {
         guard !Self.isExecutableSigned else {
             return
         }
         
-        try Self.signMainExecutableAndRun(file: file, entitlementsURL: entitlementsURL)
+        try Self.signMainExecutableAndRun(entitlementsURL: entitlementsURL, _filePath: _filePath)
     }
 }
